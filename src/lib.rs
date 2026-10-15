@@ -122,7 +122,16 @@ fn alloc_file() {
 
         let time = Local::now().format("%Y-%m-%d-%H-%M-%S").to_string();
 
-        let file = OpenOptions::new().create(true).read(true).write(true).open(format!("/home/Slacker201/logging/alloc_logger_{}.alog", time));
+        let Ok(Some(mut path)) = std::env::current_exe().map(|path| path.parent().map(|c| c.to_path_buf())) else {
+            ALLOCATING_FILE.store(false, Ordering::Relaxed);
+            return;
+        };
+
+        path = path.join("logs");
+        path = path.join(format!("allocator_logs_{}.alog", time));
+
+        let file = OpenOptions::new().create(true).read(true).write(true).open(path);
+
         if let Ok(file) = file {
             let _ = file.set_len(LOGGING_LENGTH);
             let mmap_result = unsafe { memmap2::MmapMut::map_mut(&file) };
